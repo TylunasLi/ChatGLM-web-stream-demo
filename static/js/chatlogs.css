@@ -1,0 +1,45 @@
+  div[chat-log] {
+	min-height: 400px;
+	margin-right: -15px;
+	overflow-x: hidden;
+	overflow-y: scroll;
+  }
+  div[chat-log] .row div {
+	padding-left: 10px;
+	padding-right: 10px;
+  }
+  div[chat-log] .avatar {
+	float: left;
+	width: 96px;
+  }
+  div[chat-log] .img-circle {
+	width: 100%;
+	height: 0px;
+	padding-bottom: 100%;
+  }
+  div[chat-log] .img-circle p {
+	position: absolute;
+	left: 0; 
+	right: 0; 
+	top: 0;
+	bottom: 0;
+	width: 80%;
+	height: 50%;
+	margin: auto;
+	display: table;
+  }
+  div[chat-log] .img-circle p>span {
+	display: table-cell;
+	vertical-align:middle;
+  }
+  div[chat-log] .time {
+	margin: 5px 0;
+	color: #AAA;
+  }
+  .bg-success-primary {
+	color: #fff;
+	background-color: #3c873d;
+  }
+  div[chat-log] .alert {
+	box-shadow: 0 5px 10px 0px rgba(152, 152, 152, 0.3);
+  }
