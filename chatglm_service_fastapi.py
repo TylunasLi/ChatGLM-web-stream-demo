@@ -1,3 +1,8 @@
+#! /usr/bin/python3
+# -*- coding: utf-8 -*-
+# ChatGLM-web-stream-demo
+# Copyright (c) 2023 TylunasLi, MIT License
+
 from fastapi import FastAPI, Request
 from sse_starlette.sse import ServerSentEvent, EventSourceResponse
 from fastapi.middleware.cors import CORSMiddleware
