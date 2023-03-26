@@ -9,6 +9,7 @@ from flask import Flask, request, Response
 from flask_cors import CORS
 import torch
 from transformers import AutoTokenizer, AutoModel
+import argparse
 import logging
 import os
 import json
@@ -44,21 +45,43 @@ def format_sse(data: str, event=None) -> str:
 
 
 class ChatGLM():
-    def __init__(self) -> None:
+    def __init__(self, quantize_level, gpu_id) -> None:
         logger.info("Start initialize model...")
         self.tokenizer = AutoTokenizer.from_pretrained(
             "THUDM/chatglm-6b", trust_remote_code=True)
-        self.model = AutoModel.from_pretrained(
-            "THUDM/chatglm-6b", trust_remote_code=True).half().cuda()  # .quantize(8)
+        self.model = self._model(quantize_level, gpu_id)
+        self.model.eval()
         _, _ = self.model.chat(self.tokenizer, "你好", history=[])
         logger.info("Model initialization finished.")
-
-    def clear(self, gpu_id) -> None:
+    
+    def _model(self, quantize_level, gpu_id):
+        model_name = "THUDM/chatglm-6b"
+        quantize = int(args.quantize)
+        tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True)
+        model = None
+        if gpu_id == '-1':
+            if quantize == 8:
+                print('CPU模式下量化等级只能是16或4，使用4')
+                model_name = "THUDM/chatglm-6b-int4"
+            elif quantize == 4:
+                model_name = "THUDM/chatglm-6b-int4"
+            model = AutoModel.from_pretrained(model_name, trust_remote_code=True).float()
+        else:
+            gpu_ids = gpu_id.split(",");
+            self.devices = ["cuda:{}".format(id) for id in gpu_ids]
+            if quantize == 16:
+                model = AutoModel.from_pretrained(model_name, trust_remote_code=True).half().cuda()
+            else:
+                model = AutoModel.from_pretrained(model_name, trust_remote_code=True).half().quantize(quantize).cuda()
+        return model
+    
+    def clear(self) -> None:
         if torch.cuda.is_available():
-            with torch.cuda.device("gpu:{}".format(gpu_id)):
-                torch.cuda.empty_cache()
-                torch.cuda.ipc_collect()
-
+            for device in self.devices:
+                with torch.cuda.device(device):
+                    torch.cuda.empty_cache()
+                    torch.cuda.ipc_collect()
+    
     def answer(self, query: str, history):
         response, history = self.model.chat(self.tokenizer, query, history=history)
         history = [list(h) for h in history]
@@ -78,13 +101,15 @@ class ChatGLM():
         yield {"query": query, "delta": "[EOS]", "response": response, "history": history, "finished": True}
 
 
-def start_server(http_address: str, port: int, gpu_id: str):
+def start_server(quantize_level, http_address: str, port: int, gpu_id: str):
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
 
     bot = ChatGLM()
+    
     app = Flask(__name__)
     cors = CORS(app, supports_credentials=True)
+    
     @app.route("/")
     def index():
         return Response(json.dumps({'message': 'started', 'success': True}, ensure_ascii=False), content_type="application/json")
@@ -136,7 +161,7 @@ def start_server(http_address: str, port: int, gpu_id: str):
     def clear():
         history = []
         try:
-            bot.clear(gpu_id)
+            bot.clear()
             return Response(json.dumps({"success": True}, ensure_ascii=False), content_type="application/json")
         except Exception as e:
             return Response(json.dumps({"success": False}, ensure_ascii=False), content_type="application/json")
@@ -153,4 +178,10 @@ def start_server(http_address: str, port: int, gpu_id: str):
 
 
 if __name__ == '__main__':
-    start_server('0.0.0.0', 8800, gpu_id='0')
+    parser = argparse.ArgumentParser(description='Stream API Service for ChatGLM-6B')
+    parser.add_argument('--device', '-d', help='device，-1 means cpu, other means gpu ids', default='0')
+    parser.add_argument('--quantize', '-q', help='level of quantize, option：16, 8 or 4', default=16)
+    parser.add_argument('--host', '-H', help='host to listen', default='0.0.0.0')
+    parser.add_argument('--port', '-P', help='port of this service', default=8800)
+    args = parser.parse_args()
+    start_server(args.quantize, args.host, int(args.port), args.device)
