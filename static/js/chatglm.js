@@ -14,7 +14,7 @@ marked.setOptions({
   highlight: function (code) {
     return hljs.highlightAuto(code).value;
   }
-})
+});
 
 function time_string() {
   var now = new Date();
@@ -23,7 +23,7 @@ function time_string() {
 }
 
 function query_chatglm_by_stream(args, vue, last) {
-    var stream = ""
+    var stream = "";
     const { EventSource } = createEventSource();
     var evtSource = new EventSource(baseUrl + "stream", {
       method: "POST",
@@ -38,14 +38,15 @@ function query_chatglm_by_stream(args, vue, last) {
         let response = JSON.parse(event.data);
         if (response.finished) {
           vue.history.push([
-             response.query, response.response
+            response.query, response.response
           ]);
           evtSource.close();
-          last.text = marked(response.response)
+          if (response.response.length <= stream.length)
+            last.text = marked(response.response)
         } else {
           if (!last.text)
-            last.time = time_string()
-          stream += response.delta
+            last.time = time_string();
+          stream += response.delta;
           last.text = marked(stream)
         }
       } catch (error) {
@@ -104,7 +105,7 @@ var app = new Vue({
       this.history = []
     },
     answerQuestion : function (query) {
-      if ("" == query) return;
+      if (!query) return;
       this.question = "";
       let _time = time_string();
       this.chatlogs.push({
@@ -124,4 +125,4 @@ var app = new Vue({
   },
   computed: {
   }
-})
+});

@@ -89,6 +89,7 @@ gevent
 python3 -u chatglm_service_flask.py --host 127.0.0.1 --port 8800 --quantize 8 --device 0
 ```
 
+参数中，--device 为 -1 表示 cpu，其他数字`i`表示第`i`张卡。
 
 ## FastAPI Demo
 
@@ -134,5 +135,14 @@ python3 -u chatglm_service_fastapi.py --host 127.0.0.1 --port 8800 --quantize 8 
 var baseUrl = "http://localhost:8800/"
 ```
 
+## 已知问题（Known Issues）
 
+* **流式问答生成过程中可能会出现乱码**
 
+  这主要是部分token并不是完整的字符造成的，因此接口最后返回了完整的生成结果。如果是非0平面的Unicode字符，可以通过编码判断处理；但还存在个别其它乱码现象，本人会进一步排查。
+
+## 致谢
+
+除上述引用的仓库外，还需要感谢以下项目：
+
+[ikechan8370/SimpleChatGLM6BAPI](https://github.com/ikechan8370/SimpleChatGLM6BAPI)  参考了其中的参数逻辑
