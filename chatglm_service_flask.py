@@ -57,7 +57,6 @@ class ChatGLM():
     def _model(self, quantize_level, gpu_id):
         model_name = "THUDM/chatglm-6b"
         quantize = int(args.quantize)
-        tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True)
         model = None
         if gpu_id == '-1':
             if quantize == 8:
@@ -67,7 +66,7 @@ class ChatGLM():
                 model_name = "THUDM/chatglm-6b-int4"
             model = AutoModel.from_pretrained(model_name, trust_remote_code=True).float()
         else:
-            gpu_ids = gpu_id.split(",");
+            gpu_ids = gpu_id.split(",")
             self.devices = ["cuda:{}".format(id) for id in gpu_ids]
             if quantize == 16:
                 model = AutoModel.from_pretrained(model_name, trust_remote_code=True).half().cuda()

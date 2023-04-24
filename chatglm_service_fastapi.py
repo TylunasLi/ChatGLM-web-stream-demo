@@ -4,6 +4,7 @@
 # Copyright (c) 2023 TylunasLi, MIT License
 
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import ServerSentEvent, EventSourceResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -49,7 +50,6 @@ class ChatGLM():
     def _model(self, quantize_level, gpu_id):
         model_name = "THUDM/chatglm-6b"
         quantize = int(args.quantize)
-        tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True)
         model = None
         if gpu_id == '-1':
             if quantize == 8:
@@ -106,6 +106,7 @@ def start_server(quantize_level, http_address: str, port: int, gpu_id: str):
         allow_methods=["*"],
         allow_headers=["*"]
     )
+    app.mount("/static", StaticFiles(directory="./static"), name="static")
     
     @app.get("/")
     def index():
